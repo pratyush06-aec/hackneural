@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <style>
+    body {
+      background: #111111;
+      color: #484848;
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <span>Redirecting&hellip;</span>
+
+  <script src="config.js"></script>
+  <script>
+    // This page sits between your shareable link and helloneural.ai.
+    // Share this URL:  https://your-domain.com/track.html?ref=YOUR_REF_CODE
+    // It records a click in Supabase, then immediately sends the visitor to:
+    //   https://helloneural.ai/preorder?ref=YOUR_REF_CODE
+    // where Neural's snippet records the referral when they submit their email.
+
+    (function () {
+      const params  = new URLSearchParams(window.location.search);
+      const refCode = params.get('ref');
+      const dest    = refCode
+        ? 'https://helloneural.ai/preorder?ref=' + encodeURIComponent(refCode)
+        : 'https://helloneural.ai/preorder';
+
+      if (!refCode) {
+        location.href = dest;
+        return;
+      }
+
+      // Fire-and-forget click event — keepalive ensures it completes even
+      // after the browser navigates away.
+      fetch(SUPABASE_URL + '/rest/v1/link_clicks', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ ref_code: refCode }),
+        keepalive: true
+      }).catch(function () {});
+
+      // Redirect regardless of fetch outcome.
+      // Tiny delay ensures fetch is dispatched before navigation.
+      setTimeout(function () { location.href = dest; }, 80);
+    })();
+  </script>
+</body>
+</html>

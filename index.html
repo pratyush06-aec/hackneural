@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hacktropica — Referral Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Work Sans', system-ui, sans-serif;
+      background: #111111;
+      color: #8f8f8f;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .wrap { width: 100%; max-width: 360px; }
+
+    /* ── Collab logo ── */
+    .collab-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .collab-logo img.logo-neural {
+      height: 21px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .collab-logo .x-sep {
+      font-family: 'Work Sans', sans-serif;
+      font-weight: 300;
+      font-size: 17px;
+      color: #333333;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .collab-logo img.logo-hack {
+      height: 30px;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* ── Brand text ── */
+    .brand-text { text-align: center; margin-bottom: 36px; }
+
+    .brand-text h1 {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: #eeebe4;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .brand-text p { font-size: 13px; color: #444; }
+
+    /* ── Setup notice ── */
+    .notice {
+      background: rgba(255, 107, 53, 0.07);
+      border: 1px solid rgba(255, 107, 53, 0.18);
+      border-radius: 4px;
+      color: #a07050;
+      font-size: 12px;
+      line-height: 1.6;
+      padding: 10px 12px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 28px;
+    }
+
+    /* ── Form ── */
+    .fg { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #555;
+      margin-bottom: 7px;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      background: #121212;
+      border: 1px solid #1e1e1e;
+      border-radius: 4px;
+      color: #eeebe4;
+      font-family: 'Work Sans', sans-serif;
+      font-size: 14px;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+
+    input:focus { border-color: #ff6b35; }
+    input::placeholder { color: #2e2e2e; }
+
+    .err {
+      background: rgba(180, 50, 40, 0.1);
+      border: 1px solid rgba(180, 50, 40, 0.22);
+      border-radius: 4px;
+      color: #be6060;
+      font-size: 13px;
+      padding: 9px 12px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: #ff6b35;
+      border: none;
+      border-radius: 4px;
+      color: #111;
+      cursor: pointer;
+      font-family: 'Work Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 16px;
+      margin-top: 6px;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover { background: #e55a27; }
+
+    .btn-primary:disabled {
+      background: #251a14;
+      color: #4a3a2e;
+      cursor: not-allowed;
+    }
+
+    /* ── Not configured banner ── */
+    .config-warn {
+      background: rgba(180, 50, 40, 0.08);
+      border: 1px solid rgba(180, 50, 40, 0.22);
+      border-radius: 6px;
+      padding: 20px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #9a7070;
+    }
+
+    .config-warn strong { color: #be6060; display: block; margin-bottom: 8px; font-size: 14px; }
+
+    .config-warn code {
+      font-family: monospace;
+      background: #1e1e1e;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 12px;
+      color: #eeebe4;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- Collab logo: Neural × Hacktropica -->
+    <div class="collab-logo">
+      <img class="logo-neural" src="logo.svg" alt="Neural">
+      <span class="x-sep">&times;</span>
+      <img class="logo-hack" src="primary_white.png" alt="Hacktropica">
+    </div>
+
+    <div class="brand-text">
+      <h1>Referral Dashboard</h1>
+      <p id="sub">Sign in to manage your referral links</p>
+    </div>
+
+    <!-- Shown if config.js still has placeholder values -->
+    <div class="config-warn" id="configWarn" style="display:none">
+      <strong>Configuration required</strong>
+      Open <code>config.js</code> and fill in your Supabase URL, anon key, and
+      dashboard URL, then re-upload the file to your server.
+    </div>
+
+    <div class="card" id="loginCard">
+      <div class="notice" id="notice" style="display:none">
+        No account set up yet. Create your login account in
+        Supabase → Authentication → Users → Add user, then sign in here.
+      </div>
+      <div class="err" id="err"></div>
+
+      <div class="fg">
+        <label for="em">Email Address</label>
+        <input type="email" id="em" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="fg">
+        <label for="pw">Password</label>
+        <input type="password" id="pw" placeholder="Your password" autocomplete="current-password">
+      </div>
+
+      <button class="btn-primary" id="sbtn" onclick="signIn()">Sign In</button>
+    </div>
+
+  </div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    // ── Config guard ──────────────────────────────────────────
+    function isConfigured() {
+      return typeof SUPABASE_URL !== 'undefined' &&
+             SUPABASE_URL !== 'https://YOUR-PROJECT-ID.supabase.co' &&
+             typeof SUPABASE_ANON_KEY !== 'undefined' &&
+             SUPABASE_ANON_KEY !== 'YOUR-ANON-KEY-HERE';
+    }
+
+    if (!isConfigured()) {
+      document.getElementById('configWarn').style.display = 'block';
+      document.getElementById('loginCard').style.display = 'none';
+    }
+
+    // ── Supabase client ───────────────────────────────────────
+    const db = isConfigured()
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    // ── Auth check ────────────────────────────────────────────
+    if (db) {
+      db.auth.getSession().then(({ data: { session } }) => {
+        if (session) location.href = 'dashboard.html';
+      });
+    }
+
+    // ── Sign in ───────────────────────────────────────────────
+    async function signIn() {
+      if (!db) return;
+
+      const email    = document.getElementById('em').value.trim();
+      const password = document.getElementById('pw').value;
+      const errEl    = document.getElementById('err');
+      const btn      = document.getElementById('sbtn');
+
+      errEl.style.display = 'none';
+      if (!email || !password) { showErr('Please fill in all fields.'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+
+      const { error } = await db.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+        // Surface a friendlier message for the most common case
+        const msg = error.message.toLowerCase().includes('invalid')
+          ? 'Incorrect email or password.'
+          : error.message;
+        showErr(msg);
+      } else {
+        location.href = 'dashboard.html';
+      }
+    }
+
+    function showErr(msg) {
+      const el = document.getElementById('err');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
+  </script>
+</body>
+</html>
