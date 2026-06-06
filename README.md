@@ -71,6 +71,26 @@ On the target site (e.g., `helloneural.ai`), you must trigger the conversion eve
 await supabase.rpc('record_referral', { p_username: 'THE_REF_CODE' });
 ```
 
+## 🖥️ Running Locally
+
+Because this is a zero-build static frontend, you can run it locally using any simple HTTP server. Open your terminal in the project directory and run one of the following commands:
+
+**Using Node.js (npx)**
+```bash
+npx serve .
+```
+
+**Using Python 3**
+```bash
+python -m http.server 8000
+```
+
+**Using VS Code**
+- Install the **Live Server** extension.
+- Right-click `index.html` and select **"Open with Live Server"**.
+
+The website will be available at `http://localhost:3000` (for `npx`) or `http://localhost:8000` (for Python).
+
 ## 🔒 Security
 - **Row Level Security (RLS)**: The database is secured at the row level. Only authenticated dashboard users can read data.
 - **Anon Interactions**: `track.html` and the target site snippet only have privileges to insert clicks and increment referral counts via strictly defined paths. They cannot read or delete data.
