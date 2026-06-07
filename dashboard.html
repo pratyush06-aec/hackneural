@@ -733,6 +733,13 @@ async function renderOverview() {
     rpc('get_daily_stats', { p_ref_code: null, p_days: 30 })
   ]);
 
+  // Fetch individual click timestamps for tooltip detail
+  const managedCodes = linkStats.map(l => l.ref_code);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const rawClicks = await fetchClickTimes(null, managedCodes, cutoff);
+  const clicksByDay = groupClicksByDay(rawClicks);
+
   const totalClicks    = linkStats.reduce((s, l) => s + Number(l.clicks), 0);
   const totalReferrals = linkStats.reduce((s, l) => s + Number(l.ref_count), 0);
   const convRate       = totalClicks > 0 ? ((totalReferrals / totalClicks) * 100).toFixed(1) : '0.0';
@@ -778,14 +785,15 @@ async function renderOverview() {
       </div>
     </div>`;
 
-  requestAnimationFrame(() => initOverviewChart(dailyData));
+  requestAnimationFrame(() => initOverviewChart(dailyData, clicksByDay));
 }
 
-function initOverviewChart(data) {
+function initOverviewChart(data, clicksByDay) {
   const canvas = document.getElementById('overviewChart');
   if (!canvas) return;
-  const labels = data.map(d => fmtDayLabel(d.day));
-  const values = data.map(d => Number(d.clicks));
+  const labels   = data.map(d => fmtDayLabel(d.day));
+  const rawDates = data.map(d => d.day);
+  const values   = data.map(d => Number(d.clicks));
   const chart = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -796,7 +804,14 @@ function initOverviewChart(data) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { ...tooltipDefaults(), callbacks: { label: ctx => ` ${fmtNum(ctx.parsed.y)} click${ctx.parsed.y !== 1 ? 's' : ''}` } }
+        tooltip: {
+          ...tooltipDefaults(),
+          callbacks: {
+            title: ctx => fmtDayFull(rawDates[ctx[0].dataIndex]),
+            label: ctx => ` ${fmtNum(ctx.parsed.y)} click${ctx.parsed.y !== 1 ? 's' : ''}`,
+            afterBody: ctx => buildTimeLines(clicksByDay, rawDates[ctx[0].dataIndex])
+          }
+        }
       },
       scales: { x: scaleDefaults(), y: scaleDefaults() }
     }
@@ -924,6 +939,13 @@ async function renderAnalytics() {
     rpc('get_recent_referrals', { p_ref_code: refCode, p_limit: 50 })
   ]);
 
+  // Fetch individual click timestamps for tooltip detail
+  const managedCodes = selectedLink ? [selectedLink.ref_code] : linkStats.map(l => l.ref_code);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - analyticsDays);
+  const rawClicks = await fetchClickTimes(refCode, managedCodes, cutoff);
+  const clicksByDay = groupClicksByDay(rawClicks);
+
   // Signup totals come from linkStats (referrals table has no timestamps, only current count)
   const totalSignups  = selectedLink
     ? Number(selectedLink.ref_count || 0)
@@ -972,14 +994,15 @@ async function renderAnalytics() {
       </div>
     </div>`;
 
-  requestAnimationFrame(() => initAnalyticsChart(dailyData));
+  requestAnimationFrame(() => initAnalyticsChart(dailyData, clicksByDay));
 }
 
-function initAnalyticsChart(data) {
+function initAnalyticsChart(data, clicksByDay) {
   const canvas = document.getElementById('analyticsChart');
   if (!canvas) return;
-  const labels = data.map(d => fmtDayLabel(d.day));
-  const clicks  = data.map(d => Number(d.clicks));
+  const labels   = data.map(d => fmtDayLabel(d.day));
+  const rawDates = data.map(d => d.day);
+  const clicks   = data.map(d => Number(d.clicks));
 
   const chart = new Chart(canvas, {
     type: 'line',
@@ -994,7 +1017,14 @@ function initAnalyticsChart(data) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: { ...tooltipDefaults(), callbacks: { label: ctx => ` ${fmtNum(ctx.parsed.y)} click${ctx.parsed.y !== 1 ? 's' : ''}` } }
+        tooltip: {
+          ...tooltipDefaults(),
+          callbacks: {
+            title: ctx => fmtDayFull(rawDates[ctx[0].dataIndex]),
+            label: ctx => ` ${fmtNum(ctx.parsed.y)} click${ctx.parsed.y !== 1 ? 's' : ''}`,
+            afterBody: ctx => buildTimeLines(clicksByDay, rawDates[ctx[0].dataIndex])
+          }
+        }
       },
       scales: { x: scaleDefaults(), y: { ...scaleDefaults(), min: 0 } }
     }
@@ -1285,6 +1315,57 @@ function fmtDateTime(d) {
 
 function fmtDayLabel(d) {
   return new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function fmtDayFull(d) {
+  return new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function fmtClickTime(iso) {
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+// Fetch individual click records from link_clicks
+async function fetchClickTimes(refCode, managedCodes, since) {
+  let q = db.from('link_clicks')
+    .select('ref_code, clicked_at')
+    .gte('clicked_at', since.toISOString())
+    .order('clicked_at', { ascending: true });
+
+  if (refCode) {
+    q = q.eq('ref_code', refCode);
+  } else {
+    q = q.in('ref_code', managedCodes);
+  }
+
+  const { data, error } = await q;
+  if (error) return [];
+  return data || [];
+}
+
+// Group click records by YYYY-MM-DD
+function groupClicksByDay(clicks) {
+  const map = {};
+  clicks.forEach(c => {
+    const day = c.clicked_at.slice(0, 10);
+    if (!map[day]) map[day] = [];
+    map[day].push(c.clicked_at);
+  });
+  return map;
+}
+
+// Build tooltip time lines, capped at 8
+function buildTimeLines(clicksByDay, day) {
+  const times = clicksByDay[day];
+  if (!times || times.length === 0) return [];
+  const lines = [''];
+  const cap = 8;
+  const show = times.slice(0, cap);
+  show.forEach(t => lines.push('  ⏱ ' + fmtClickTime(t)));
+  if (times.length > cap) {
+    lines.push(`  + ${times.length - cap} more`);
+  }
+  return lines;
 }
 
 function escHtml(s) {
