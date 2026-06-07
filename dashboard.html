@@ -1359,11 +1359,15 @@ async function renderAnalytics() {
     rpc('get_recent_referrals', { p_ref_code: refCode, p_limit: 50 })
   ]);
 
-  // Fetch individual click timestamps for tooltip detail
+  // Fetch individual events for tooltip detail and detailed views
+  // If viewing an individual link, we want SIGNUPS. If all links, we want CLICKS.
   const managedCodes = selectedLink ? [selectedLink.ref_code] : linkStats.map(l => l.ref_code);
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - analyticsDays);
-  const rawClicks = await fetchClickTimes(refCode, managedCodes, cutoff);
+  
+  const rawClicks = selectedLink 
+    ? await fetchSignupTimes(refCode, cutoff)
+    : await fetchClickTimes(null, managedCodes, cutoff);
 
   let chartData, tooltipData;
   if (analyticsDays === 1) {
@@ -1371,13 +1375,32 @@ async function renderAnalytics() {
     chartData = hourly.chartData;
     tooltipData = hourly.tooltipMap;
   } else {
-    chartData = dailyData.map(d => ({
-      label: fmtDayLabel(d.day),
-      fullTitle: fmtDayFull(d.day),
-      rawKey: d.day,
-      clicks: Number(d.clicks)
-    }));
-    tooltipData = groupClicksByDay(rawClicks);
+    if (selectedLink) {
+      // For individual links, we bypass the click-based RPC and aggregate signups client-side
+      const grouped = groupClicksByDay(rawClicks);
+      const ds = [];
+      for (let i = analyticsDays - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dayStr = d.toISOString().slice(0, 10);
+        ds.push({
+          label: fmtDayLabel(dayStr),
+          fullTitle: fmtDayFull(dayStr),
+          rawKey: dayStr,
+          clicks: grouped[dayStr] ? grouped[dayStr].length : 0
+        });
+      }
+      chartData = ds;
+      tooltipData = grouped;
+    } else {
+      chartData = dailyData.map(d => ({
+        label: fmtDayLabel(d.day),
+        fullTitle: fmtDayFull(d.day),
+        rawKey: d.day,
+        clicks: Number(d.clicks)
+      }));
+      tooltipData = groupClicksByDay(rawClicks);
+    }
   }
 
   // Signup totals come from linkStats (referrals table has no timestamps, only current count)
@@ -1439,7 +1462,7 @@ async function renderAnalytics() {
         <div class="s-value">${fmtNum(totalSignups)}</div><div class="s-sub">${escHtml(linkLabel)}</div>
       </div>
       <div class="stat-card">
-        <div class="s-label"><span class="s-ico"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5 7L8 3.5M8 3.5L7 8.5L4 11.5M8 3.5L11 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Clicks (this period)</div>
+        <div class="s-label"><span class="s-ico"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5 7L8 3.5M8 3.5L7 8.5L4 11.5M8 3.5L11 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>${selectedLink ? 'Signups' : 'Clicks'} (this period)</div>
         <div class="s-value">${fmtNum(periodClicks)}</div><div class="s-sub">${analyticsDays === 1 ? 'Last 24 hours' : `Last ${analyticsDays} days`} · ${escHtml(linkLabel)}</div>
       </div>
       <div class="stat-card">
@@ -1455,7 +1478,7 @@ async function renderAnalytics() {
       <div class="section-header">
         <span class="section-title">
           <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 11L5 6.5L8 9L13.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          Clicks Over Time
+          ${selectedLink ? 'Signups' : 'Clicks'} Over Time
         </span>
         <span class="section-sub">${analyticsDays === 1 ? 'Hourly' : 'Daily'} · ${escHtml(linkLabel)}</span>
       </div>
@@ -1464,7 +1487,7 @@ async function renderAnalytics() {
         <div class="insight-cell"><div class="i-label">${avgLabel}</div><div class="i-value">${avgPerDay >= 10 ? fmtNum(Math.round(avgPerDay)) : avgPerDay.toFixed(1)}</div></div>
         <div class="insight-cell"><div class="i-label">Peak Hour</div><div class="i-value">${escHtml(peakHourLabel)}</div></div>
         <div class="insight-cell"><div class="i-label">Busiest ${analyticsDays === 1 ? 'Hour' : 'Day'}</div><div class="i-value" style="font-size:13px">${escHtml(busiestLabel)}</div></div>
-        <div class="insight-cell"><div class="i-label">Total Clicks</div><div class="i-value">${fmtNum(hod.total)}</div></div>
+        <div class="insight-cell"><div class="i-label">Total ${selectedLink ? 'Signups' : 'Clicks'}</div><div class="i-value">${fmtNum(hod.total)}</div></div>
       </div>
     </div>
     <div class="section" style="margin-bottom:18px">
@@ -1473,7 +1496,7 @@ async function renderAnalytics() {
           <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".4"/><rect x="5.9" y="1.5" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".9"/><rect x="10.3" y="1.5" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".6"/><rect x="1.5" y="5.9" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".7"/><rect x="5.9" y="5.9" width="3.2" height="3.2" rx="1" fill="currentColor"/><rect x="10.3" y="5.9" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".3"/></svg></span>
           Activity by Hour of Day
         </span>
-        <span class="section-sub">When your audience clicks · ${analyticsDays === 1 ? 'last 24h' : `last ${analyticsDays} days`}</span>
+        <span class="section-sub">When your audience ${selectedLink ? 'signs up' : 'clicks'} · ${analyticsDays === 1 ? 'last 24h' : `last ${analyticsDays} days`}</span>
       </div>
       <div class="section-body"><div id="hourHeatmap"></div></div>
     </div>
@@ -1525,7 +1548,7 @@ async function renderAnalytics() {
           </div>
           <div class="t-right">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-            CLICKS
+            ${selectedLink ? 'SIGNUPS' : 'CLICKS'}
           </div>
         </div>
         <div class="t-content" id="content-communities" style="padding:0;align-items:flex-start"></div>
@@ -1541,7 +1564,7 @@ async function renderAnalytics() {
           </div>
           <div class="t-right">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-            CLICKS
+            ${selectedLink ? 'SIGNUPS' : 'CLICKS'}
           </div>
         </div>
         <div class="t-content" id="content-devices" style="padding:0;align-items:flex-start"></div>
@@ -1552,7 +1575,7 @@ async function renderAnalytics() {
       <div class="section-header">
         <span class="section-title">
           <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 3.5H13M2 7.5H13M2 11.5H13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
-          Click Events
+          ${selectedLink ? 'Signup' : 'Click'} Events
         </span>
         <span class="section-sub">${fmtNum(rawClicks.length)} event${rawClicks.length !== 1 ? 's' : ''} · ${analyticsDays === 1 ? 'last 24h' : 'last ' + analyticsDays + ' days'}</span>
       </div>
@@ -1614,7 +1637,7 @@ async function renderAnalytics() {
     </div>`}`;
 
   requestAnimationFrame(() => {
-    initAnalyticsChart(chartData, tooltipData);
+    initAnalyticsChart(chartData, tooltipData, selectedLink);
     renderHeatmap('hourHeatmap', rawClicks);
     if (!selectedLink) renderChannelBars('channelBars', linkStats);
     
@@ -1633,7 +1656,7 @@ async function renderAnalytics() {
   });
 }
 
-function initAnalyticsChart(chartData, tooltipData) {
+function initAnalyticsChart(chartData, tooltipData, selectedLink) {
   const canvas = document.getElementById('analyticsChart');
   if (!canvas) return;
 
@@ -1651,7 +1674,7 @@ function initAnalyticsChart(chartData, tooltipData) {
     data: {
       labels,
       datasets: [
-        { label: 'Clicks', data: clicks, borderColor: '#ff6b35',
+        { label: selectedLink ? 'Signups' : 'Clicks', data: clicks, borderColor: '#ff6b35',
           backgroundColor: c => accentGradient(c.chart.ctx, c.chart.chartArea, 0.22, 0),
           borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: '#ff6b35',
           pointBorderColor: '#111', pointBorderWidth: 1.5, tension: 0.3, fill: true }
@@ -1666,7 +1689,7 @@ function initAnalyticsChart(chartData, tooltipData) {
           ...tooltipDefaults(),
           callbacks: {
             title: ctx => titles[ctx[0].dataIndex],
-            label: ctx => ` ${fmtNum(ctx.parsed.y)} click${ctx.parsed.y !== 1 ? 's' : ''}`,
+            label: ctx => ` ${fmtNum(ctx.parsed.y)} ${selectedLink ? 'signup' : 'click'}${ctx.parsed.y !== 1 ? 's' : ''}`,
             afterBody: ctx => buildTimeLines(tooltipData, rawKeys[ctx[0].dataIndex])
           }
         }
@@ -1760,14 +1783,26 @@ function renderSettings() {
   // ── 2. Signup tracking (fires on email form submit) ──
   document.addEventListener('submit',function(e){
     if(!e.target.querySelector('input[type="email"]'))return;
+    
+    // 1. Increment total counter in referrals table
     fetch('${SUPABASE_URL}/rest/v1/rpc/record_referral',{
       method:'POST',
-      headers:{
-        'apikey':'${SUPABASE_ANON_KEY}',
-        'Content-Type':'application/json'
-      },
+      headers:{ 'apikey':'${SUPABASE_ANON_KEY}', 'Content-Type':'application/json' },
       body:JSON.stringify({p_username:r}),
       keepalive:true
+    }).catch(function(){});
+
+    // 2. Log detailed signup event in link_signups table
+    fetch('${SUPABASE_URL}/rest/v1/link_signups',{
+      method:'POST',headers:hdrs,keepalive:true,
+      body:JSON.stringify({ref_code:r,community:community,device:device,browser:browser,os:os,trigger:trigger})
+    }).then(function(res){
+      if(!res.ok){
+        return fetch('${SUPABASE_URL}/rest/v1/link_signups',{
+          method:'POST',headers:hdrs,keepalive:true,
+          body:JSON.stringify({ref_code:r})
+        });
+      }
     }).catch(function(){});
   },true);
 })();
@@ -2053,6 +2088,22 @@ async function fetchClickTimes(refCode, managedCodes, since) {
   return data || [];
 }
 
+// Fetch individual signup records from link_signups
+async function fetchSignupTimes(refCode, since) {
+  const { data, error } = await db.from('link_signups')
+    .select('*')
+    .eq('ref_code', refCode)
+    .gte('signed_up_at', since.toISOString())
+    .order('signed_up_at', { ascending: true });
+
+  if (error) return [];
+  // Map signed_up_at to clicked_at so the rest of the chart/table logic works unchanged
+  return (data || []).map(row => ({
+    ...row,
+    clicked_at: row.signed_up_at
+  }));
+}
+
 // Group click records by YYYY-MM-DD
 function groupClicksByDay(clicks) {
   const map = {};
@@ -2305,7 +2356,7 @@ function renderClickLog(rawClicks, selectedLink) {
   if (!tbody) return;
 
   if (rawClicks.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:36px;color:var(--text-muted)">No click events recorded in this period.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:36px;color:var(--text-muted)">No ${selectedLink ? 'signup' : 'click'} events recorded in this period.</td></tr>`;
     return;
   }
 

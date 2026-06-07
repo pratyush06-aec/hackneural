@@ -47,6 +47,18 @@ CREATE TABLE IF NOT EXISTS link_clicks (
   trigger    TEXT
 );
 
+-- One row every time someone successfully signs up (submits email).
+CREATE TABLE IF NOT EXISTS link_signups (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  ref_code     TEXT        NOT NULL,
+  signed_up_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  community    TEXT,
+  device       TEXT,
+  browser      TEXT,
+  os           TEXT,
+  trigger      TEXT
+);
+
 
 -- ================================================================
 -- UNIQUE CONSTRAINT ON referrals.username
@@ -82,6 +94,8 @@ $$;
 CREATE INDEX IF NOT EXISTS idx_referral_links_ref_code ON referral_links(ref_code);
 CREATE INDEX IF NOT EXISTS idx_link_clicks_ref_code    ON link_clicks(ref_code);
 CREATE INDEX IF NOT EXISTS idx_link_clicks_clicked_at  ON link_clicks(clicked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_link_signups_ref_code   ON link_signups(ref_code);
+CREATE INDEX IF NOT EXISTS idx_link_signups_signed_up  ON link_signups(signed_up_at DESC);
 CREATE INDEX IF NOT EXISTS idx_referrals_username      ON referrals(username);
 
 
@@ -91,6 +105,7 @@ CREATE INDEX IF NOT EXISTS idx_referrals_username      ON referrals(username);
 
 ALTER TABLE referral_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE link_clicks    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE link_signups   ENABLE ROW LEVEL SECURITY;
 
 -- referral_links: only authenticated dashboard users can manage
 DROP POLICY IF EXISTS "auth_manage_links" ON referral_links;
@@ -109,6 +124,19 @@ CREATE POLICY "anon_insert_clicks"
 DROP POLICY IF EXISTS "auth_read_clicks" ON link_clicks;
 CREATE POLICY "auth_read_clicks"
   ON link_clicks FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- link_signups: public (anon) inserts from form submit; authenticated can read
+DROP POLICY IF EXISTS "anon_insert_signups" ON link_signups;
+CREATE POLICY "anon_insert_signups"
+  ON link_signups FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "auth_read_signups" ON link_signups;
+CREATE POLICY "auth_read_signups"
+  ON link_signups FOR SELECT
   TO authenticated
   USING (true);
 
