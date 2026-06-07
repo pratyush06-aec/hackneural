@@ -16,9 +16,9 @@
       --surface2:   #1e1e1e;
       --border:     #222222;
       --border2:    #2a2a2a;
-      --text-head:  #eeebe4;
-      --text-body:  #9a9a9a;
-      --text-muted: #484848;
+      --text-head:  #f2efea;
+      --text-body:  #d9d6d0;
+      --text-muted: #908d85;
       --accent:     #ff6b35;
       --accent-h:   #e55a27;
       --success:    #4a9e72;
@@ -75,7 +75,7 @@
       font-family: 'Work Sans', sans-serif;
       font-weight: 300;
       font-size: 13px;
-      color: #2e2e2e;
+      color: #605d56;
       line-height: 1;
       user-select: none;
       flex-shrink: 0;
@@ -199,8 +199,24 @@
     .btn-ghost { background: transparent; color: var(--text-body); border-color: var(--border2); }
     .btn-ghost:hover { background: var(--surface2); border-color: #333; color: var(--text-head); }
 
-    .btn-icon { padding: 6px; background: transparent; color: var(--text-muted); border: none; border-radius: 4px; }
-    .btn-icon:hover { background: var(--surface2); color: var(--text-body); }
+    .btn-icon {
+      padding: 8px;
+      background: rgba(255,255,255,0.03);
+      color: var(--text-body);
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .btn-icon:hover { background: var(--surface2); color: var(--text-head); border-color: #3a3a3a; }
+    .btn-icon-danger {
+      padding: 8px;
+      background: rgba(184,72,72,0.06);
+      color: var(--danger);
+      border: 1px solid rgba(184,72,72,0.2);
+      border-radius: 5px;
+      transition: background 0.12s, color 0.12s;
+    }
+    .btn-icon-danger:hover { background: rgba(184,72,72,0.14); color: #d45555; }
 
     .btn-danger { background: transparent; color: var(--danger); border-color: rgba(184,72,72,0.3); }
     .btn-danger:hover { background: rgba(184,72,72,0.08); }
@@ -291,21 +307,21 @@
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: rgba(255,255,255,0.014); }
 
-    tbody td { padding: 11px 16px; color: var(--text-body); vertical-align: middle; }
+    tbody td { padding: 11px 16px; color: var(--text-body); vertical-align: middle; font-weight: 400; }
 
     .td-primary { color: var(--text-head); font-weight: 500; }
 
     .td-mono {
       font-family: 'Courier New', monospace;
       font-size: 11px;
-      color: var(--text-muted);
+      color: #908d85;
       max-width: 200px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .td-actions { display: flex; align-items: center; gap: 2px; justify-content: flex-end; }
+    .td-actions { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
 
     /* ── Form rows ── */
     .form-row { margin-bottom: 16px; }
@@ -338,7 +354,7 @@
     }
 
     .form-row input:focus, .form-row textarea:focus, .form-row select:focus { border-color: var(--accent); }
-    .form-row input::placeholder, .form-row textarea::placeholder { color: #2e2e2e; }
+    .form-row input::placeholder, .form-row textarea::placeholder { color: #6e6b64; }
     .form-row select option { background: #1a1a1a; }
     .form-row textarea { min-height: 76px; }
 
@@ -406,7 +422,7 @@
     }
 
     .search-wrap input:focus { border-color: #333; }
-    .search-wrap input::placeholder { color: var(--text-muted); }
+    .search-wrap input::placeholder { color: #908d85; }
 
     /* ── Empty state ── */
     .empty { text-align: center; padding: 52px 20px; }
@@ -517,7 +533,7 @@
       padding: 14px;
       font-family: 'Courier New', monospace;
       font-size: 11px;
-      color: #7a8a7a;
+      color: #b4c4b4;
       line-height: 1.7;
       white-space: pre-wrap;
       word-break: break-all;
@@ -829,18 +845,18 @@ async function renderLinks() {
           <td>${fmtNum(l.ref_count)}</td>
           <td>
             <div class="td-actions">
-              <button class="btn btn-icon" title="Copy tracking URL" onclick="copyText('${escAttr(tUrl)}')">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="4.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 8.5H3C2.4 8.5 2 8.1 2 7.5V3C2 2.4 2.4 2 3 2H7.5C8.1 2 8.5 2.4 8.5 3V4.5" stroke="currentColor" stroke-width="1.4"/></svg>
-              </button>
-              <button class="btn btn-icon" title="View analytics" onclick="navigate('analytics','${l.id}')">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="7.5" width="2.5" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="5.25" y="4.5" width="2.5" height="7" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="1.5" width="2.5" height="10" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
-              </button>
-              <button class="btn btn-icon" title="Edit" onclick="openLinkModal('${l.id}')">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 1.5L11.5 4.5L4 12H1V9L8.5 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-              </button>
-              <button class="btn btn-icon" title="Delete" style="color:var(--danger)" onclick="confirmDeleteLink('${l.id}','${escAttr(l.name)}')">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5H11M4.5 3.5V2.5C4.5 2.2 4.7 2 5 2H8C8.3 2 8.5 2.2 8.5 2.5V3.5M5 10.5L4.5 5M8 10.5L8.5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M2.5 3.5L3 11C3 11.6 3.4 12 4 12H9C9.6 12 10 11.6 10 11L10.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-              </button>
+              <button class="btn btn-icon" title="Copy tracking URL" onclick="copyText('${escAttr(tUrl)}')"
+                ><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="5.5" width="8.5" height="8.5" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 10.5H3.5C2.7 10.5 2 9.8 2 9V3.5C2 2.7 2.7 2 3.5 2H9C9.8 2 10.5 2.7 10.5 3.5V5.5" stroke="currentColor" stroke-width="1.5"/></svg
+              ></button>
+              <button class="btn btn-icon" title="View analytics" onclick="navigate('analytics','${l.id}')"
+                ><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="9" width="3.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="6.25" y="5.5" width="3.5" height="9" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="2" width="3.5" height="12.5" rx="1" stroke="currentColor" stroke-width="1.5"/></svg
+              ></button>
+              <button class="btn btn-icon" title="Edit" onclick="openLinkModal('${l.id}')"
+                ><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10.5 2L14 5.5L5 14.5H1.5V11L10.5 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg
+              ></button>
+              <button class="btn btn-icon-danger" title="Delete" onclick="confirmDeleteLink('${l.id}','${escAttr(l.name)}')"
+                ><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2.5 4.5H13.5M5.5 4.5V3C5.5 2.5 6 2 6.5 2H9.5C10 2 10.5 2.5 10.5 3V4.5M6 13L5.5 6.5M10 13L10.5 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3.5 4.5L4 13.5C4 14.3 4.7 15 5.5 15H10.5C11.3 15 12 14.3 12 13.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg
+              ></button>
             </div>
           </td>
         </tr>`;
@@ -1278,12 +1294,33 @@ function escAttr(s) {
 }
 
 function copyText(text) {
-  navigator.clipboard.writeText(text).catch(() => {
+  // navigator.clipboard requires a secure context (HTTPS or localhost).
+  // Guard against it being undefined on plain HTTP deployments.
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Copied to clipboard.');
+    }).catch(() => {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  try {
     const t = document.createElement('textarea');
-    t.value = text; t.style.cssText = 'position:fixed;opacity:0';
-    document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
-  });
-  showToast('Copied to clipboard.');
+    t.value = text;
+    t.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+    document.body.appendChild(t);
+    t.focus();
+    t.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(t);
+    showToast(ok ? 'Copied to clipboard.' : 'Copy failed — please copy manually.');
+  } catch (_) {
+    showToast('Copy failed — please copy manually.');
+  }
 }
 
 function showToast(msg) {
@@ -1298,15 +1335,15 @@ function showToast(msg) {
 function tooltipDefaults() {
   return {
     backgroundColor: '#1e1e1e', borderColor: '#2a2a2a', borderWidth: 1,
-    titleColor: '#eeebe4', bodyColor: '#9a9a9a', padding: 10
+    titleColor: '#f2efea', bodyColor: '#d9d6d0', padding: 10
   };
 }
 
 function scaleDefaults() {
   return {
-    grid:   { color: '#1a1a1a' },
-    border: { color: '#1a1a1a' },
-    ticks:  { color: '#484848', font: { size: 11, family: "'Work Sans', sans-serif" }, maxRotation: 45 }
+    grid:   { color: '#1e1e1e' },
+    border: { color: '#1e1e1e' },
+    ticks:  { color: '#9e9b93', font: { size: 11, family: "'Work Sans', sans-serif" }, maxRotation: 45 }
   };
 }
 
