@@ -57,15 +57,17 @@
       border-bottom: 1px solid var(--border);
     }
 
-    /* Collab logo — compact horizontal */
+    /* Collab logo — vertical stack */
     .collab-logo {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 9px;
+      gap: 14px;
+      padding: 12px 0 4px;
     }
 
     .collab-logo img.logo-neural {
-      height: 15px;
+      height: 36px;
       object-fit: contain;
       display: block;
       flex-shrink: 0;
@@ -73,16 +75,16 @@
 
     .collab-logo .x-sep {
       font-family: 'Work Sans', sans-serif;
-      font-weight: 300;
-      font-size: 13px;
-      color: #605d56;
+      font-weight: 400;
+      font-size: 18px;
+      color: #908d85;
       line-height: 1;
       user-select: none;
       flex-shrink: 0;
     }
 
     .collab-logo img.logo-hack {
-      height: 21px;
+      height: 30px;
       object-fit: contain;
       display: block;
       min-width: 0;
