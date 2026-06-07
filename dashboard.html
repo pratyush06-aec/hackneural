@@ -698,6 +698,23 @@
     .search-wrap input:focus { border-color: #333; }
     .search-wrap input::placeholder { color: #908d85; }
 
+    /* ── Tabbed Boxes ── */
+    .tabbed-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; overflow: hidden; height: 320px; box-shadow: var(--shadow); }
+    .tabbed-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); background: #161616; padding: 0 16px; min-height: 44px; }
+    .t-tabs { display: flex; align-items: center; gap: 16px; }
+    .t-tab { font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; padding: 12px 0; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; }
+    .t-tab:hover { color: var(--text-body); }
+    .t-tab.active { color: var(--text-head); border-bottom-color: var(--accent); }
+    .t-right { font-size: 11px; font-weight: 600; color: #555; display: flex; align-items: center; gap: 6px; letter-spacing: 0.05em; }
+    .t-content { flex: 1; overflow-y: auto; padding: 0; }
+    .t-sub-tabs { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .t-sub-tab { font-size: 11px; font-weight: 500; color: var(--text-muted); cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background 0.15s, color 0.15s; }
+    .t-sub-tab:hover { background: var(--surface2); color: var(--text-body); }
+    .t-sub-tab.active { background: var(--border); color: var(--text-head); }
+
+    /* ── Box grid ── */
+    .box-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+
     /* ── Empty state ── */
     .empty { text-align: center; padding: 52px 20px; }
 
@@ -1482,19 +1499,53 @@ async function renderAnalytics() {
         </div>
       </div>
     </div>` : `
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">
-          <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 8C9 8 10.2 6.8 10.2 5.3S9 2.5 7.5 2.5 4.8 3.7 4.8 5.3 6 8 7.5 8Z" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 12.5C2.5 10.3 4.7 9 7.5 9S12.5 10.3 12.5 12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
-          Signup Summary
-        </span>
-        <span class="section-sub">${recentReferrals.length} link${recentReferrals.length !== 1 ? 's' : ''}</span>
+    <div class="section" style="margin-bottom:18px">
+      <div class="tabbed-box">
+        <div class="tabbed-header">
+          <div class="t-tabs" id="tab-group-links">
+            <div class="t-tab active" onclick="switchTab('links', 'destinations')">Destination URLs</div>
+            <div class="t-tab" onclick="switchTab('links', 'shortlinks')">Short Links</div>
+          </div>
+          <div class="t-right">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            CLICKS
+          </div>
+        </div>
+        <div class="t-sub-tabs" id="sub-group-links" style="display:none">
+          <div class="t-sub-tab active">Links</div>
+        </div>
+        <div class="t-content" id="content-links" style="padding:0;align-items:flex-start"></div>
       </div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr><th>Link</th><th>Ref Code</th><th>Signups</th></tr></thead>
-          <tbody>${signupRows}</tbody>
-        </table>
+    </div>
+
+    <div class="box-grid">
+      <div class="tabbed-box">
+        <div class="tabbed-header">
+          <div class="t-tabs">
+            <div class="t-tab active">Communities</div>
+          </div>
+          <div class="t-right">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            CLICKS
+          </div>
+        </div>
+        <div class="t-content" id="content-communities" style="padding:0;align-items:flex-start"></div>
+      </div>
+
+      <div class="tabbed-box">
+        <div class="tabbed-header">
+          <div class="t-tabs" id="tab-group-devices">
+            <div class="t-tab active" onclick="switchTab('devices', 'device')">Devices</div>
+            <div class="t-tab" onclick="switchTab('devices', 'browser')">Browsers</div>
+            <div class="t-tab" onclick="switchTab('devices', 'os')">OS</div>
+            <div class="t-tab" onclick="switchTab('devices', 'trigger')">Triggers</div>
+          </div>
+          <div class="t-right">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            CLICKS
+          </div>
+        </div>
+        <div class="t-content" id="content-devices" style="padding:0;align-items:flex-start"></div>
       </div>
     </div>`}`;
 
@@ -1502,12 +1553,25 @@ async function renderAnalytics() {
     initAnalyticsChart(chartData, tooltipData);
     renderHeatmap('hourHeatmap', rawClicks);
     if (!selectedLink) renderChannelBars('channelBars', linkStats);
+    
+    // Wire dynamic analytics data
+    window._analyticsData = rawClicks;
+    window._linkStats = linkStats;
+    window._selectedLink = selectedLink;
+    switchTab('links', 'destinations');
+    switchTab('devices', 'device');
+    renderList('content-communities', aggregateDim(rawClicks, 'community'), rawClicks.length);
   });
 }
 
 function initAnalyticsChart(chartData, tooltipData) {
   const canvas = document.getElementById('analyticsChart');
   if (!canvas) return;
+
+  if (window._analyticsChartInstance) {
+    window._analyticsChartInstance.destroy();
+  }
+
   const labels   = chartData.map(d => d.label);
   const titles   = chartData.map(d => d.fullTitle);
   const rawKeys  = chartData.map(d => d.rawKey);
@@ -1541,7 +1605,7 @@ function initAnalyticsChart(chartData, tooltipData) {
       scales: { x: scaleDefaults(), y: { ...scaleDefaults(), min: 0 } }
     }
   });
-  activeCharts.push(chart);
+  window._analyticsChartInstance = chart;
 }
 
 // ================================================================
@@ -1551,15 +1615,80 @@ function renderSettings() {
   const email = currentUser?.email || '';
 
   const snippet =
-`<!-- Hacktropica Referral Tracker
-     Add this to helloneural.ai/preorder before </body>
-     It fires when someone submits their email with a ?ref= param.
-     Calls record_referral() which atomically increments the signup
-     count for that username in the referrals table. -->
+`<!-- Hacktropica Referral Tracker — UNIFIED (Click + Signup)
+     Add this to helloneural.ai/preorder inside <head> or before </body>.
+     On page load: records a click in link_clicks with device, browser,
+     OS, and community metadata.
+     On email form submit: records a signup via record_referral().
+     No personal data is stored — only the ref code and metadata. -->
 <script>
 (function(){
   var r=new URLSearchParams(window.location.search).get('ref');
   if(!r)return;
+
+  // ── 1. Click tracking (fires immediately on page load) ──
+  var ua=navigator.userAgent;
+  var browser='Unknown';
+  if(/firefox/i.test(ua))browser='Firefox';
+  else if(/edg/i.test(ua))browser='Edge';
+  else if(/chrome|crios/i.test(ua))browser='Chrome';
+  else if(/safari/i.test(ua))browser='Safari';
+  else if(/opera|opr/i.test(ua))browser='Opera';
+
+  var os='Unknown';
+  if(/windows/i.test(ua))os='Windows';
+  else if(/mac os/i.test(ua))os='macOS';
+  else if(/linux/i.test(ua))os='Linux';
+  else if(/android/i.test(ua))os='Android';
+  else if(/iphone|ipad|ipod/i.test(ua))os='iOS';
+
+  var device=/mobile|android|iphone|ipad|phone/i.test(ua)?'Mobile':'Desktop';
+
+  var community='Direct';
+  var ref=document.referrer.toLowerCase();
+  if(ref.indexOf('reddit.com')!==-1)community='Reddit';
+  else if(ref.indexOf('twitter.com')!==-1||ref.indexOf('t.co')!==-1||ref.indexOf('x.com')!==-1)community='X (Twitter)';
+  else if(ref.indexOf('facebook.com')!==-1)community='Facebook';
+  else if(ref.indexOf('linkedin.com')!==-1)community='LinkedIn';
+  else if(ref.indexOf('instagram.com')!==-1)community='Instagram';
+  else if(ref.indexOf('youtube.com')!==-1)community='YouTube';
+  else if(ref.indexOf('tiktok.com')!==-1)community='TikTok';
+  else if(ref.indexOf('discord.com')!==-1||ref.indexOf('discord.gg')!==-1)community='Discord';
+  else if(ref){try{community=new URL(ref).hostname.replace('www.','')}catch(e){}}
+
+  var trigger=new URLSearchParams(window.location.search).get('trigger')
+    ||new URLSearchParams(window.location.search).get('utm_medium')
+    ||'Link Click';
+
+  var hdrs={
+    'apikey':'${SUPABASE_ANON_KEY}',
+    'Content-Type':'application/json',
+    'Prefer':'return=minimal'
+  };
+
+  // Try full payload with metadata columns first.
+  // If the schema hasn't been updated yet (columns don't exist),
+  // PostgREST returns a 400 — catch it and retry with just ref_code.
+  fetch('${SUPABASE_URL}/rest/v1/link_clicks',{
+    method:'POST',headers:hdrs,keepalive:true,
+    body:JSON.stringify({ref_code:r,community:community,device:device,browser:browser,os:os,trigger:trigger})
+  }).then(function(res){
+    if(!res.ok){
+      return fetch('${SUPABASE_URL}/rest/v1/link_clicks',{
+        method:'POST',headers:hdrs,keepalive:true,
+        body:JSON.stringify({ref_code:r})
+      });
+    }
+  }).catch(function(){
+    try{
+      fetch('${SUPABASE_URL}/rest/v1/link_clicks',{
+        method:'POST',headers:hdrs,keepalive:true,
+        body:JSON.stringify({ref_code:r})
+      }).catch(function(){});
+    }catch(e){}
+  });
+
+  // ── 2. Signup tracking (fires on email form submit) ──
   document.addEventListener('submit',function(e){
     if(!e.target.querySelector('input[type="email"]'))return;
     fetch('${SUPABASE_URL}/rest/v1/rpc/record_referral',{
@@ -1594,12 +1723,12 @@ function renderSettings() {
     <div class="settings-section">
       <h3>helloneural.ai Integration</h3>
       <p class="s-desc">
-        Send this snippet to Neural and ask them to add it to the
+        Paste this single snippet into your
         <code style="font-size:11px;font-family:monospace;background:var(--surface2);padding:1px 5px;border-radius:3px">helloneural.ai/preorder</code>
-        page. It listens for email form submissions that include a
-        <code style="font-size:11px;font-family:monospace;background:var(--surface2);padding:1px 5px;border-radius:3px">?ref=</code>
-        parameter and records one referral in your Supabase database for each submission.
-        No personal data is stored — only the ref code and a timestamp.
+        page. It does <strong style="color:var(--text-head)">two things automatically</strong>:<br>
+        <strong style="color:var(--accent)">① Click tracking</strong> — records a click with device, browser, OS, and community data the instant the page loads.<br>
+        <strong style="color:var(--accent)">② Signup tracking</strong> — records a referral when the visitor submits their email.<br>
+        <em>No track.html redirect needed — just share your Direct links.</em>
       </p>
       <div class="snippet-block" id="snippetBlock">${escHtml(snippet)}</div>
       <button class="btn btn-ghost" onclick="copyText(document.getElementById('snippetBlock').textContent)">
@@ -1840,7 +1969,7 @@ function fmtClickTime(iso) {
 // Fetch individual click records from link_clicks
 async function fetchClickTimes(refCode, managedCodes, since) {
   let q = db.from('link_clicks')
-    .select('ref_code, clicked_at')
+    .select('*')
     .gte('clicked_at', since.toISOString())
     .order('clicked_at', { ascending: true });
 
@@ -2098,6 +2227,93 @@ function scaleDefaults() {
     border: { color: '#1e1e1e' },
     ticks:  { color: '#9e9b93', font: { size: 11, family: "'Work Sans', sans-serif" }, maxRotation: 45 }
   };
+}
+
+// ── Dynamic Analytics Helpers ───────────────────────────────────
+
+function aggregateDim(clicks, dim) {
+  const counts = {};
+  clicks.forEach(c => {
+    let val = c[dim];
+    if (!val || val === 'Unknown' || val.trim() === '') val = 'Other';
+    counts[val] = (counts[val] || 0) + 1;
+  });
+  return Object.keys(counts).map(k => ({ label: k, count: counts[k] })).sort((a,b) => b.count - a.count);
+}
+
+function aggregateShortLinks() {
+  const clicks = window._analyticsData || [];
+  const stats = window._linkStats || [];
+  const selected = window._selectedLink;
+  
+  if (selected) {
+    return [{ label: selected.name, sub: selected.ref_code, count: clicks.length }];
+  } else {
+    // If all links are selected, we group clicks by ref_code
+    const counts = {};
+    clicks.forEach(c => { counts[c.ref_code] = (counts[c.ref_code] || 0) + 1; });
+    return Object.keys(counts).map(code => {
+      const s = stats.find(l => l.ref_code === code);
+      return { label: s ? s.name : code, sub: code, count: counts[code] };
+    }).sort((a,b) => b.count - a.count);
+  }
+}
+
+function aggregateDestinations() {
+  const clicks = window._analyticsData || [];
+  const selected = window._selectedLink;
+  
+  // They all point to helloneural.ai/preorder as the destination!
+  if (clicks.length === 0) return [];
+  const dest = 'https://helloneural.ai/preorder' + (selected ? '?ref=' + encodeURIComponent(selected.ref_code) : '');
+  return [{ label: dest, count: clicks.length }];
+}
+
+function renderList(containerId, items, totalClicks) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (items.length === 0 || totalClicks === 0) {
+    el.innerHTML = '<div style="width:100%;text-align:center;padding:80px 20px;color:var(--text-muted);font-size:13px">No data available</div>';
+    return;
+  }
+  
+  el.innerHTML = '<div style="width:100%">' + items.map(item => {
+    const pct = totalClicks > 0 ? (item.count / totalClicks) * 100 : 0;
+    return `
+      <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid var(--border);position:relative">
+        <div style="position:absolute;left:0;top:0;bottom:0;background:rgba(255,107,53,0.05);width:${pct}%"></div>
+        <div style="flex:1;position:relative;z-index:1;display:flex;align-items:baseline;gap:8px">
+          <span style="color:var(--text-head);font-size:13px;font-weight:500">${escHtml(item.label)}</span>
+          ${item.sub ? `<span style="color:var(--text-muted);font-size:11px;font-family:monospace">${escHtml(item.sub)}</span>` : ''}
+        </div>
+        <div style="position:relative;z-index:1;font-size:13px;color:var(--text-body);font-weight:500">${fmtNum(item.count)}</div>
+      </div>
+    `;
+  }).join('') + '</div>';
+}
+
+function switchTab(group, tab) {
+  const tabsWrap = document.getElementById('tab-group-' + group);
+  if (!tabsWrap) return;
+  
+  const tabs = tabsWrap.querySelectorAll('.t-tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  const clickedTab = Array.from(tabs).find(t => t.innerText.toLowerCase().replace(' ', '') === tab.replace(' ', ''));
+  if (clickedTab) clickedTab.classList.add('active');
+
+  const subGroup = document.getElementById('sub-group-' + group);
+  
+  if (group === 'links') {
+    if (tab === 'destinations') {
+      if (subGroup) subGroup.style.display = 'none';
+      renderList('content-links', aggregateDestinations(), window._analyticsData.length);
+    } else {
+      if (subGroup) subGroup.style.display = 'flex';
+      renderList('content-links', aggregateShortLinks(), window._analyticsData.length);
+    }
+  } else if (group === 'devices') {
+    renderList('content-devices', aggregateDim(window._analyticsData || [], tab), window._analyticsData.length);
+  }
 }
 
 // ================================================================

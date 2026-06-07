@@ -39,7 +39,12 @@ CREATE TABLE IF NOT EXISTS referral_links (
 CREATE TABLE IF NOT EXISTS link_clicks (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   ref_code   TEXT        NOT NULL,
-  clicked_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  clicked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  community  TEXT,
+  device     TEXT,
+  browser    TEXT,
+  os         TEXT,
+  trigger    TEXT
 );
 
 
