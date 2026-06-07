@@ -647,6 +647,7 @@ let currentUser   = null;
 let currentView   = 'overview';
 let analyticsLink = 'all';   // link id or 'all'
 let analyticsDays = 30;
+let overviewDays  = 30;
 let activeCharts  = [];
 let linkSearch    = '';
 
@@ -730,15 +731,35 @@ async function fromTable(table, opts) {
 async function renderOverview() {
   const [linkStats, dailyData] = await Promise.all([
     rpc('get_link_stats'),
-    rpc('get_daily_stats', { p_ref_code: null, p_days: 30 })
+    rpc('get_daily_stats', { p_ref_code: null, p_days: overviewDays })
   ]);
+
+  document.getElementById('topbarRight').innerHTML = `
+    <select class="inline-select" onchange="overviewDays=parseInt(this.value);navigate('overview')">
+      <option value="7"  ${overviewDays === 7  ? 'selected' : ''}>Last 7 days</option>
+      <option value="30" ${overviewDays === 30 ? 'selected' : ''}>Last 30 days</option>
+      <option value="90" ${overviewDays === 90 ? 'selected' : ''}>Last 90 days</option>
+    </select>`;
 
   // Fetch individual click timestamps for tooltip detail
   const managedCodes = linkStats.map(l => l.ref_code);
   const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 30);
+  cutoff.setDate(cutoff.getDate() - overviewDays);
   const rawClicks = await fetchClickTimes(null, managedCodes, cutoff);
-  const clicksByDay = groupClicksByDay(rawClicks);
+
+  // Calculate daily data for the bar chart
+  const chartData = dailyData.map(d => ({
+    label: fmtDayLabel(d.day),
+    fullTitle: fmtDayFull(d.day),
+    rawKey: d.day,
+    clicks: Number(d.clicks)
+  }));
+  const tooltipData = groupClicksByDay(rawClicks);
+
+  // Calculate hourly data for the wave chart
+  const hourly = buildHourlyData(rawClicks);
+  const hourlyChartData = hourly.chartData;
+  const hourlyTooltipData = hourly.tooltipMap;
 
   const totalClicks    = linkStats.reduce((s, l) => s + Number(l.clicks), 0);
   const totalReferrals = linkStats.reduce((s, l) => s + Number(l.ref_count), 0);
@@ -768,9 +789,16 @@ async function renderOverview() {
     <div class="section" style="margin-bottom:18px">
       <div class="section-header">
         <span class="section-title">Daily Clicks</span>
-        <span style="font-size:12px;color:var(--text-muted)">Last 30 days, all links</span>
+        <span style="font-size:12px;color:var(--text-muted)">Last ${overviewDays} days, all links</span>
       </div>
       <div class="section-body"><div class="chart-wrap"><canvas id="overviewChart"></canvas></div></div>
+    </div>
+    <div class="section" style="margin-bottom:18px">
+      <div class="section-header">
+        <span class="section-title">Last 24 Hours</span>
+        <span style="font-size:12px;color:var(--text-muted)">Hourly breakdown</span>
+      </div>
+      <div class="section-body"><div class="chart-wrap"><canvas id="hourlyOverviewChart"></canvas></div></div>
     </div>
     <div class="section">
       <div class="section-header">
@@ -785,31 +813,75 @@ async function renderOverview() {
       </div>
     </div>`;
 
-  requestAnimationFrame(() => initOverviewChart(dailyData, clicksByDay));
+  requestAnimationFrame(() => {
+    initOverviewChart(chartData, tooltipData);
+    initHourlyOverviewChart(hourlyChartData, hourlyTooltipData);
+  });
 }
 
-function initOverviewChart(data, clicksByDay) {
-  const canvas = document.getElementById('overviewChart');
+function initHourlyOverviewChart(chartData, tooltipData) {
+  const canvas = document.getElementById('hourlyOverviewChart');
   if (!canvas) return;
-  const labels   = data.map(d => fmtDayLabel(d.day));
-  const rawDates = data.map(d => d.day);
-  const values   = data.map(d => Number(d.clicks));
+  const labels   = chartData.map(d => d.label);
+  const titles   = chartData.map(d => d.fullTitle);
+  const rawKeys  = chartData.map(d => d.rawKey);
+  const values   = chartData.map(d => d.clicks);
+
   const chart = new Chart(canvas, {
-    type: 'bar',
+    type: 'line',
     data: {
       labels,
-      datasets: [{ data: values, backgroundColor: 'rgba(255,107,53,0.6)', hoverBackgroundColor: '#ff6b35', borderRadius: 3, borderSkipped: false }]
+      datasets: [
+        { label: 'Clicks', data: values, borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.15)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointBackgroundColor: '#ff6b35', tension: 0.4, fill: true }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
         tooltip: {
           ...tooltipDefaults(),
           callbacks: {
-            title: ctx => fmtDayFull(rawDates[ctx[0].dataIndex]),
+            title: ctx => titles[ctx[0].dataIndex],
             label: ctx => ` ${fmtNum(ctx.parsed.y)} click${ctx.parsed.y !== 1 ? 's' : ''}`,
-            afterBody: ctx => buildTimeLines(clicksByDay, rawDates[ctx[0].dataIndex])
+            afterBody: ctx => buildTimeLines(tooltipData, rawKeys[ctx[0].dataIndex])
+          }
+        }
+      },
+      scales: { x: scaleDefaults(), y: { ...scaleDefaults(), min: 0 } }
+    }
+  });
+  activeCharts.push(chart);
+}
+
+function initOverviewChart(chartData, tooltipData) {
+  const canvas = document.getElementById('overviewChart');
+  if (!canvas) return;
+  const labels   = chartData.map(d => d.label);
+  const titles   = chartData.map(d => d.fullTitle);
+  const rawKeys  = chartData.map(d => d.rawKey);
+  const values   = chartData.map(d => d.clicks);
+
+  const chart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Clicks', data: values, backgroundColor: '#ff6b35', borderRadius: 4, hoverBackgroundColor: '#ff8a5e' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...tooltipDefaults(),
+          callbacks: {
+            title: ctx => titles[ctx[0].dataIndex],
+            label: ctx => ` ${fmtNum(ctx.parsed.y)} click${ctx.parsed.y !== 1 ? 's' : ''}`,
+            afterBody: ctx => buildTimeLines(tooltipData, rawKeys[ctx[0].dataIndex])
           }
         }
       },
@@ -913,6 +985,7 @@ async function renderAnalytics() {
       ${linkOpts}
     </select>
     <select class="inline-select" onchange="analyticsDays=parseInt(this.value);navigate('analytics')">
+      <option value="1"  ${analyticsDays === 1  ? 'selected' : ''}>Last 24 hours</option>
       <option value="7"  ${analyticsDays === 7  ? 'selected' : ''}>Last 7 days</option>
       <option value="30" ${analyticsDays === 30 ? 'selected' : ''}>Last 30 days</option>
       <option value="90" ${analyticsDays === 90 ? 'selected' : ''}>Last 90 days</option>
@@ -944,7 +1017,21 @@ async function renderAnalytics() {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - analyticsDays);
   const rawClicks = await fetchClickTimes(refCode, managedCodes, cutoff);
-  const clicksByDay = groupClicksByDay(rawClicks);
+
+  let chartData, tooltipData;
+  if (analyticsDays === 1) {
+    const hourly = buildHourlyData(rawClicks);
+    chartData = hourly.chartData;
+    tooltipData = hourly.tooltipMap;
+  } else {
+    chartData = dailyData.map(d => ({
+      label: fmtDayLabel(d.day),
+      fullTitle: fmtDayFull(d.day),
+      rawKey: d.day,
+      clicks: Number(d.clicks)
+    }));
+    tooltipData = groupClicksByDay(rawClicks);
+  }
 
   // Signup totals come from linkStats (referrals table has no timestamps, only current count)
   const totalSignups  = selectedLink
@@ -953,8 +1040,8 @@ async function renderAnalytics() {
   const allTimeClicks = selectedLink
     ? Number(selectedLink.clicks || 0)
     : linkStats.reduce((s, l) => s + Number(l.clicks), 0);
-  // Period clicks have timestamps via link_clicks table
-  const periodClicks  = dailyData.reduce((s, d) => s + Number(d.clicks), 0);
+  // Period clicks are aggregated from our processed chart data
+  const periodClicks  = chartData.reduce((s, d) => s + d.clicks, 0);
   const convRate      = allTimeClicks > 0 ? ((totalSignups / allTimeClicks) * 100).toFixed(1) : '0.0';
   const linkLabel     = selectedLink ? selectedLink.name : 'All Links';
 
@@ -971,7 +1058,7 @@ async function renderAnalytics() {
   document.getElementById('content').innerHTML = `
     <div class="stats-grid">
       <div class="stat-card"><div class="s-label">All-Time Signups</div><div class="s-value">${fmtNum(totalSignups)}</div><div class="s-sub">${linkLabel}</div></div>
-      <div class="stat-card"><div class="s-label">Clicks (this period)</div><div class="s-value">${fmtNum(periodClicks)}</div><div class="s-sub">Last ${analyticsDays} days via tracking link</div></div>
+      <div class="stat-card"><div class="s-label">Clicks (this period)</div><div class="s-value">${fmtNum(periodClicks)}</div><div class="s-sub">${analyticsDays === 1 ? 'Last 24 hours' : `Last ${analyticsDays} days`} via tracking link</div></div>
       <div class="stat-card"><div class="s-label">Conversion Rate</div><div class="s-value">${convRate}%</div><div class="s-sub">All-time clicks to signups</div></div>
       <div class="stat-card"><div class="s-label">${selectedLink ? 'All-Time Clicks' : 'Active Links'}</div><div class="s-value">${selectedLink ? fmtNum(allTimeClicks) : linkStats.length}</div><div class="s-sub">${selectedLink ? 'Total via tracking link' : 'Referral channels'}</div></div>
     </div>
@@ -994,15 +1081,16 @@ async function renderAnalytics() {
       </div>
     </div>`;
 
-  requestAnimationFrame(() => initAnalyticsChart(dailyData, clicksByDay));
+  requestAnimationFrame(() => initAnalyticsChart(chartData, tooltipData));
 }
 
-function initAnalyticsChart(data, clicksByDay) {
+function initAnalyticsChart(chartData, tooltipData) {
   const canvas = document.getElementById('analyticsChart');
   if (!canvas) return;
-  const labels   = data.map(d => fmtDayLabel(d.day));
-  const rawDates = data.map(d => d.day);
-  const clicks   = data.map(d => Number(d.clicks));
+  const labels   = chartData.map(d => d.label);
+  const titles   = chartData.map(d => d.fullTitle);
+  const rawKeys  = chartData.map(d => d.rawKey);
+  const clicks   = chartData.map(d => d.clicks);
 
   const chart = new Chart(canvas, {
     type: 'line',
@@ -1020,9 +1108,9 @@ function initAnalyticsChart(data, clicksByDay) {
         tooltip: {
           ...tooltipDefaults(),
           callbacks: {
-            title: ctx => fmtDayFull(rawDates[ctx[0].dataIndex]),
+            title: ctx => titles[ctx[0].dataIndex],
             label: ctx => ` ${fmtNum(ctx.parsed.y)} click${ctx.parsed.y !== 1 ? 's' : ''}`,
-            afterBody: ctx => buildTimeLines(clicksByDay, rawDates[ctx[0].dataIndex])
+            afterBody: ctx => buildTimeLines(tooltipData, rawKeys[ctx[0].dataIndex])
           }
         }
       },
@@ -1355,8 +1443,8 @@ function groupClicksByDay(clicks) {
 }
 
 // Build tooltip time lines, capped at 8
-function buildTimeLines(clicksByDay, day) {
-  const times = clicksByDay[day];
+function buildTimeLines(tooltipMap, key) {
+  const times = tooltipMap[key];
   if (!times || times.length === 0) return [];
   const lines = [''];
   const cap = 8;
@@ -1366,6 +1454,41 @@ function buildTimeLines(clicksByDay, day) {
     lines.push(`  + ${times.length - cap} more`);
   }
   return lines;
+}
+
+// Generate 24 hourly buckets for the 'Last 24 hours' view
+function buildHourlyData(rawClicks) {
+  const now = new Date();
+  const data = [];
+  const map = {};
+  for (let i = 23; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 60 * 60 * 1000);
+    d.setMinutes(0, 0, 0);
+    const bucketStart = d.getTime();
+    const rawKey = bucketStart.toString();
+    data.push({
+      label: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+      fullTitle: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+      rawKey: rawKey,
+      clicks: 0,
+      bucketStart: bucketStart,
+      bucketEnd: bucketStart + 60 * 60 * 1000
+    });
+    map[rawKey] = [];
+  }
+  
+  rawClicks.forEach(c => {
+    const ct = new Date(c.clicked_at).getTime();
+    for (let i = 0; i < 24; i++) {
+      if (ct >= data[i].bucketStart && ct < data[i].bucketEnd) {
+        data[i].clicks++;
+        map[data[i].rawKey].push(c.clicked_at);
+        break;
+      }
+    }
+  });
+  
+  return { chartData: data, tooltipMap: map };
 }
 
 function escHtml(s) {
