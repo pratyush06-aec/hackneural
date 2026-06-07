@@ -21,9 +21,13 @@
       --text-muted: #908d85;
       --accent:     #ff6b35;
       --accent-h:   #e55a27;
+      --accent-dim: rgba(255,107,53,0.12);
       --success:    #4a9e72;
       --danger:     #b84848;
       --sidebar-w:  236px;
+      --radius:     8px;
+      --shadow:     0 1px 2px rgba(0,0,0,0.4);
+      --shadow-hi:  0 6px 22px rgba(0,0,0,0.45);
     }
 
     html, body { height: 100%; }
@@ -232,23 +236,58 @@
     }
 
     .stat-card {
-      background: var(--surface);
+      background:
+        radial-gradient(120% 120% at 100% 0%, rgba(255,107,53,0.05) 0%, rgba(255,107,53,0) 42%),
+        var(--surface);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius);
       padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
     }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 14px; bottom: 14px;
+      width: 2px;
+      background: var(--accent);
+      opacity: 0;
+      border-radius: 0 2px 2px 0;
+      transition: opacity 0.18s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-hi);
+    }
+    .stat-card:hover::before { opacity: 0.7; }
 
     .stat-card .s-label {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.07em;
       color: var(--text-muted);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .stat-card .s-label .s-ico {
+      width: 22px; height: 22px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 6px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      flex-shrink: 0;
     }
 
     .stat-card .s-value {
       font-family: 'Source Serif 4', Georgia, serif;
-      font-size: 30px;
+      font-size: 32px;
       font-weight: 600;
       color: var(--text-head);
       letter-spacing: -0.02em;
@@ -262,9 +301,10 @@
     .section {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius);
       margin-bottom: 18px;
       overflow: hidden;
+      box-shadow: var(--shadow);
     }
 
     .section-header {
@@ -281,12 +321,244 @@
       font-size: 14px;
       font-weight: 600;
       color: var(--text-head);
+      display: flex;
+      align-items: center;
+      gap: 9px;
     }
+
+    .section-title .st-ico {
+      color: var(--accent);
+      display: inline-flex;
+      opacity: 0.9;
+    }
+
+    .section-sub { font-size: 12px; color: var(--text-muted); }
 
     .section-body { padding: 18px; }
 
     /* ── Chart ── */
     .chart-wrap { position: relative; height: 210px; }
+
+    /* ── Insight strip (mini metrics under a chart) ── */
+    .insight-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-top: 1px solid var(--border);
+    }
+    .insight-cell {
+      background: var(--surface);
+      padding: 13px 18px;
+    }
+    .insight-cell .i-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+    .insight-cell .i-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-head);
+    }
+    .insight-cell .i-value small { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+    /* ── Hour-of-day heatmap ── */
+    .heatmap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .heatmap-cells {
+      display: grid;
+      grid-template-columns: repeat(24, 1fr);
+      gap: 3px;
+    }
+    .heat-cell {
+      aspect-ratio: 1 / 1;
+      border-radius: 3px;
+      background: #1b1b1b;
+      border: 1px solid rgba(255,255,255,0.02);
+      transition: transform 0.1s, box-shadow 0.1s;
+      cursor: default;
+    }
+    .heat-cell:hover {
+      transform: scale(1.18);
+      box-shadow: 0 0 0 1px var(--accent);
+      z-index: 2;
+    }
+    .heatmap-axis {
+      display: grid;
+      grid-template-columns: repeat(24, 1fr);
+      gap: 3px;
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .heatmap-axis span { text-align: center; }
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      justify-content: flex-end;
+    }
+    .heatmap-legend .legend-scale {
+      display: flex;
+      gap: 3px;
+    }
+    .heatmap-legend .legend-scale i {
+      width: 13px; height: 13px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    /* ── Channel comparison bars ── */
+    .chan-list { display: flex; flex-direction: column; gap: 2px; }
+    .chan-row {
+      display: grid;
+      grid-template-columns: 160px 1fr auto;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .chan-row:last-child { border-bottom: none; }
+    .chan-name {
+      font-size: 13px;
+      color: var(--text-head);
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .chan-name small {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+    .chan-bar-track {
+      height: 22px;
+      background: #161616;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .chan-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-h), var(--accent));
+      border-radius: 4px;
+      min-width: 2px;
+      transition: width 0.6s cubic-bezier(0.2,0.8,0.2,1);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+    }
+    .chan-bar-fill span {
+      font-size: 11px;
+      font-weight: 600;
+      color: #1a1208;
+      white-space: nowrap;
+    }
+    .chan-bar-fill.is-thin span {
+      color: var(--text-muted);
+      position: absolute;
+      left: calc(var(--w) + 8px);
+      padding: 0;
+    }
+    .chan-conv {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: right;
+      min-width: 64px;
+    }
+    .chan-conv b { color: var(--text-body); font-weight: 600; }
+
+    /* ── Per-link detail panel ── */
+    .link-detail { display: flex; flex-direction: column; gap: 16px; }
+    .link-detail-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .link-detail-badge {
+      width: 38px; height: 38px;
+      flex-shrink: 0;
+      border-radius: 9px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .link-detail-head .ld-name {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-head);
+    }
+    .link-detail-head .ld-code {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .link-detail-desc {
+      font-size: 13px;
+      color: var(--text-body);
+      line-height: 1.6;
+      padding: 11px 13px;
+      background: #141414;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .ld-url-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ld-url-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      width: 52px;
+      flex-shrink: 0;
+    }
+    .ld-url-box {
+      flex: 1;
+      min-width: 0;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: var(--text-body);
+      background: #141414;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ld-meta {
+      display: flex;
+      gap: 26px;
+      flex-wrap: wrap;
+      padding-top: 4px;
+    }
+    .ld-meta div .ld-meta-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+    .ld-meta div .ld-meta-val { font-size: 13px; color: var(--text-head); font-weight: 500; }
 
     /* ── Table ── */
     .tbl-wrap { overflow-x: auto; }
@@ -558,6 +830,9 @@
 
     @media (max-width: 900px) {
       .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .insight-strip { grid-template-columns: repeat(2,1fr); }
+      .chan-row { grid-template-columns: 110px 1fr; }
+      .chan-conv { grid-column: 1 / -1; text-align: left; }
     }
   </style>
 </head>
@@ -781,28 +1056,59 @@ async function renderOverview() {
 
   document.getElementById('content').innerHTML = `
     <div class="stats-grid">
-      <div class="stat-card"><div class="s-label">Total Referrals</div><div class="s-value">${fmtNum(totalReferrals)}</div><div class="s-sub">Email submissions with your ref code</div></div>
-      <div class="stat-card"><div class="s-label">Total Clicks</div><div class="s-value">${fmtNum(totalClicks)}</div><div class="s-sub">Via tracking links</div></div>
-      <div class="stat-card"><div class="s-label">Conversion Rate</div><div class="s-value">${convRate}%</div><div class="s-sub">Clicks to referrals</div></div>
-      <div class="stat-card"><div class="s-label">Active Links</div><div class="s-value">${linkStats.length}</div><div class="s-sub">Referral channels</div></div>
+      <div class="stat-card">
+        <div class="s-label"><span class="s-ico"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 7.5C8.4 7.5 9.5 6.4 9.5 5S8.4 2.5 7 2.5 4.5 3.6 4.5 5 5.6 7.5 7 7.5Z" stroke="currentColor" stroke-width="1.3"/><path d="M2 12C2 9.8 4.2 8.5 7 8.5S12 9.8 12 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>Total Referrals</div>
+        <div class="s-value">${fmtNum(totalReferrals)}</div><div class="s-sub">Email submissions with your ref code</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label"><span class="s-ico"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5 7L8 3.5M8 3.5L7 8.5L4 11.5M8 3.5L11 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Total Clicks</div>
+        <div class="s-value">${fmtNum(totalClicks)}</div><div class="s-sub">Via tracking links</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label"><span class="s-ico"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 12L5.5 7.5L8 9.5L12 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 4H12V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Conversion Rate</div>
+        <div class="s-value">${convRate}%</div><div class="s-sub">Clicks to referrals</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label"><span class="s-ico"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5.5 8.5L8.5 5.5M6.3 3.9L7.5 2.7C8.5 1.7 10.1 1.7 11.1 2.7S12.1 5.3 11.1 6.3L9.9 7.5M7.5 9.7L6.3 10.9C5.3 11.9 3.7 11.9 2.7 10.9S1.7 8.3 2.7 7.3L3.9 6.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>Active Links</div>
+        <div class="s-value">${linkStats.length}</div><div class="s-sub">Referral channels</div>
+      </div>
     </div>
     <div class="section" style="margin-bottom:18px">
       <div class="section-header">
-        <span class="section-title">Daily Clicks</span>
-        <span style="font-size:12px;color:var(--text-muted)">Last ${overviewDays} days, all links</span>
+        <span class="section-title">
+          <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="8.5" width="3" height="5" rx="1" fill="currentColor" opacity=".5"/><rect x="6" y="5" width="3" height="8.5" rx="1" fill="currentColor"/><rect x="10.5" y="2.5" width="3" height="11" rx="1" fill="currentColor" opacity=".7"/></svg></span>
+          Daily Clicks
+        </span>
+        <span class="section-sub">Last ${overviewDays} days, all links</span>
       </div>
       <div class="section-body"><div class="chart-wrap"><canvas id="overviewChart"></canvas></div></div>
     </div>
     <div class="section" style="margin-bottom:18px">
       <div class="section-header">
-        <span class="section-title">Last 24 Hours</span>
-        <span style="font-size:12px;color:var(--text-muted)">Hourly breakdown</span>
+        <span class="section-title">
+          <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 4.5V7.5L9.5 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          Last 24 Hours
+        </span>
+        <span class="section-sub">Hourly breakdown</span>
       </div>
       <div class="section-body"><div class="chart-wrap"><canvas id="hourlyOverviewChart"></canvas></div></div>
     </div>
+    <div class="section" style="margin-bottom:18px">
+      <div class="section-header">
+        <span class="section-title">
+          <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".4"/><rect x="5.9" y="1.5" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".9"/><rect x="10.3" y="1.5" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".6"/><rect x="1.5" y="5.9" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".7"/><rect x="5.9" y="5.9" width="3.2" height="3.2" rx="1" fill="currentColor"/><rect x="10.3" y="5.9" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".3"/></svg></span>
+          Activity by Hour of Day
+        </span>
+        <span class="section-sub">When your audience clicks · last ${overviewDays} days</span>
+      </div>
+      <div class="section-body"><div id="overviewHeatmap"></div></div>
+    </div>
     <div class="section">
       <div class="section-header">
-        <span class="section-title">Top Links</span>
+        <span class="section-title">
+          <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2L9.2 5.5L13 6L10.2 8.7L11 12.5L7.5 10.7L4 12.5L4.8 8.7L2 6L5.8 5.5L7.5 2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>
+          Top Links
+        </span>
         <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="navigate('links')">View all</button>
       </div>
       <div class="tbl-wrap">
@@ -816,6 +1122,7 @@ async function renderOverview() {
   requestAnimationFrame(() => {
     initOverviewChart(chartData, tooltipData);
     initHourlyOverviewChart(hourlyChartData, hourlyTooltipData);
+    renderHeatmap('overviewHeatmap', rawClicks);
   });
 }
 
@@ -832,7 +1139,10 @@ function initHourlyOverviewChart(chartData, tooltipData) {
     data: {
       labels,
       datasets: [
-        { label: 'Clicks', data: values, borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.15)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointBackgroundColor: '#ff6b35', tension: 0.4, fill: true }
+        { label: 'Clicks', data: values, borderColor: '#ff6b35',
+          backgroundColor: c => accentGradient(c.chart.ctx, c.chart.chartArea, 0.28, 0),
+          borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointBackgroundColor: '#ff6b35',
+          pointBorderColor: '#111', pointBorderWidth: 1.5, tension: 0.4, fill: true }
       ]
     },
     options: {
@@ -868,7 +1178,10 @@ function initOverviewChart(chartData, tooltipData) {
     data: {
       labels,
       datasets: [
-        { label: 'Clicks', data: values, backgroundColor: '#ff6b35', borderRadius: 4, hoverBackgroundColor: '#ff8a5e' }
+        { label: 'Clicks', data: values,
+          backgroundColor: c => accentGradient(c.chart.ctx, c.chart.chartArea, 1, 0.45),
+          borderRadius: 4, borderSkipped: false, hoverBackgroundColor: '#ff8a5e',
+          maxBarThickness: 46 }
       ]
     },
     options: {
@@ -1055,23 +1368,127 @@ async function renderAnalytics() {
         </tr>`
       ).join('');
 
+  // Per-link detail panel (replaces the generic multi-row Signup Summary
+  // table when a single link is selected, so the page reads as analytics
+  // for THAT link rather than a slice of the global view).
+  const trackUrl  = selectedLink ? `${DASHBOARD_URL}/track.html?ref=${encodeURIComponent(selectedLink.ref_code)}` : '';
+  const directUrl = selectedLink ? `https://helloneural.ai/preorder?ref=${encodeURIComponent(selectedLink.ref_code)}` : '';
+
+  // Period summary for the analytics insight strip (derived from clicks we
+  // already fetched — no extra queries). Compares the selected window.
+  // For the 24h view the bucket is hours, so report avg/hour; otherwise avg/day.
+  const avgDivisor    = analyticsDays === 1 ? 24 : analyticsDays;
+  const avgLabel      = analyticsDays === 1 ? 'Avg / Hour' : 'Avg / Day';
+  const avgPerDay     = avgDivisor > 0 ? (periodClicks / avgDivisor) : 0;
+  const hod           = buildHourOfDay(rawClicks);
+  const peakHourLabel = hod.peakHour >= 0 ? fmtHourLabel(hod.peakHour) : '—';
+  const busiestPoint  = chartData.reduce((best, d) => d.clicks > best.clicks ? d : best, { clicks: -1, fullTitle: '—' });
+  const busiestLabel  = busiestPoint.clicks >= 0 ? busiestPoint.fullTitle : '—';
+
+  // Channel comparison only makes sense for the "All Links" aggregate view.
+  const channelSection = !selectedLink ? `
+    <div class="section" style="margin-bottom:18px">
+      <div class="section-header">
+        <span class="section-title">
+          <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="2.2" rx="1.1" fill="currentColor" opacity=".9"/><rect x="1.5" y="6.4" width="8" height="2.2" rx="1.1" fill="currentColor" opacity=".6"/><rect x="1.5" y="10.3" width="5" height="2.2" rx="1.1" fill="currentColor" opacity=".35"/></svg></span>
+          Channel Performance
+        </span>
+        <span class="section-sub">By click volume · all-time</span>
+      </div>
+      <div class="section-body"><div id="channelBars"></div></div>
+    </div>` : '';
+
   document.getElementById('content').innerHTML = `
     <div class="stats-grid">
-      <div class="stat-card"><div class="s-label">All-Time Signups</div><div class="s-value">${fmtNum(totalSignups)}</div><div class="s-sub">${linkLabel}</div></div>
-      <div class="stat-card"><div class="s-label">Clicks (this period)</div><div class="s-value">${fmtNum(periodClicks)}</div><div class="s-sub">${analyticsDays === 1 ? 'Last 24 hours' : `Last ${analyticsDays} days`} via tracking link</div></div>
-      <div class="stat-card"><div class="s-label">Conversion Rate</div><div class="s-value">${convRate}%</div><div class="s-sub">All-time clicks to signups</div></div>
-      <div class="stat-card"><div class="s-label">${selectedLink ? 'All-Time Clicks' : 'Active Links'}</div><div class="s-value">${selectedLink ? fmtNum(allTimeClicks) : linkStats.length}</div><div class="s-sub">${selectedLink ? 'Total via tracking link' : 'Referral channels'}</div></div>
+      <div class="stat-card">
+        <div class="s-label"><span class="s-ico"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 7.5C8.4 7.5 9.5 6.4 9.5 5S8.4 2.5 7 2.5 4.5 3.6 4.5 5 5.6 7.5 7 7.5Z" stroke="currentColor" stroke-width="1.3"/><path d="M2 12C2 9.8 4.2 8.5 7 8.5S12 9.8 12 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>All-Time Signups</div>
+        <div class="s-value">${fmtNum(totalSignups)}</div><div class="s-sub">${escHtml(linkLabel)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label"><span class="s-ico"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5 7L8 3.5M8 3.5L7 8.5L4 11.5M8 3.5L11 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Clicks (this period)</div>
+        <div class="s-value">${fmtNum(periodClicks)}</div><div class="s-sub">${analyticsDays === 1 ? 'Last 24 hours' : `Last ${analyticsDays} days`} · ${escHtml(linkLabel)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label"><span class="s-ico"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 12L5.5 7.5L8 9.5L12 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 4H12V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Conversion Rate</div>
+        <div class="s-value">${convRate}%</div><div class="s-sub">All-time clicks to signups${selectedLink ? ' · ' + escHtml(linkLabel) : ''}</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label"><span class="s-ico"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5.5 8.5L8.5 5.5M6.3 3.9L7.5 2.7C8.5 1.7 10.1 1.7 11.1 2.7S12.1 5.3 11.1 6.3L9.9 7.5M7.5 9.7L6.3 10.9C5.3 11.9 3.7 11.9 2.7 10.9S1.7 8.3 2.7 7.3L3.9 6.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>${selectedLink ? 'All-Time Clicks' : 'Active Links'}</div>
+        <div class="s-value">${selectedLink ? fmtNum(allTimeClicks) : linkStats.length}</div><div class="s-sub">${selectedLink ? 'Total via tracking link' : 'Referral channels'}</div>
+      </div>
     </div>
     <div class="section" style="margin-bottom:18px">
       <div class="section-header">
-        <span class="section-title">Clicks Over Time</span>
+        <span class="section-title">
+          <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 11L5 6.5L8 9L13.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          Clicks Over Time
+        </span>
+        <span class="section-sub">${analyticsDays === 1 ? 'Hourly' : 'Daily'} · ${escHtml(linkLabel)}</span>
       </div>
       <div class="section-body"><div class="chart-wrap"><canvas id="analyticsChart"></canvas></div></div>
+      <div class="insight-strip">
+        <div class="insight-cell"><div class="i-label">${avgLabel}</div><div class="i-value">${avgPerDay >= 10 ? fmtNum(Math.round(avgPerDay)) : avgPerDay.toFixed(1)}</div></div>
+        <div class="insight-cell"><div class="i-label">Peak Hour</div><div class="i-value">${escHtml(peakHourLabel)}</div></div>
+        <div class="insight-cell"><div class="i-label">Busiest ${analyticsDays === 1 ? 'Hour' : 'Day'}</div><div class="i-value" style="font-size:13px">${escHtml(busiestLabel)}</div></div>
+        <div class="insight-cell"><div class="i-label">Total Clicks</div><div class="i-value">${fmtNum(hod.total)}</div></div>
+      </div>
     </div>
+    <div class="section" style="margin-bottom:18px">
+      <div class="section-header">
+        <span class="section-title">
+          <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".4"/><rect x="5.9" y="1.5" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".9"/><rect x="10.3" y="1.5" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".6"/><rect x="1.5" y="5.9" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".7"/><rect x="5.9" y="5.9" width="3.2" height="3.2" rx="1" fill="currentColor"/><rect x="10.3" y="5.9" width="3.2" height="3.2" rx="1" fill="currentColor" opacity=".3"/></svg></span>
+          Activity by Hour of Day
+        </span>
+        <span class="section-sub">When your audience clicks · ${analyticsDays === 1 ? 'last 24h' : `last ${analyticsDays} days`}</span>
+      </div>
+      <div class="section-body"><div id="hourHeatmap"></div></div>
+    </div>
+    ${channelSection}
+    ${selectedLink ? `
     <div class="section">
       <div class="section-header">
-        <span class="section-title">Signup Summary</span>
-        <span style="font-size:12px;color:var(--text-muted)">${recentReferrals.length} link${recentReferrals.length !== 1 ? 's' : ''}</span>
+        <span class="section-title">
+          <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M9 1.5H3.5C2.7 1.5 2 2.2 2 3V12C2 12.8 2.7 13.5 3.5 13.5H11C11.8 13.5 12.5 12.8 12.5 12V5L9 1.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8.5 1.5V5H12.5M4.5 8H10M4.5 10.5H8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          Link Details
+        </span>
+        <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="navigate('links')">Manage</button>
+      </div>
+      <div class="section-body">
+        <div class="link-detail">
+          <div class="link-detail-head">
+            <div class="link-detail-badge">${escHtml((selectedLink.name || '?').trim().charAt(0).toUpperCase())}</div>
+            <div>
+              <div class="ld-name">${escHtml(selectedLink.name)}</div>
+              <div class="ld-code">${escHtml(selectedLink.ref_code)}</div>
+            </div>
+          </div>
+          ${selectedLink.description ? `<div class="link-detail-desc">${escHtml(selectedLink.description)}</div>` : ''}
+          <div class="ld-url-row">
+            <span class="ld-url-label">Track</span>
+            <span class="ld-url-box" title="${escHtml(trackUrl)}">${escHtml(trackUrl)}</span>
+            <button class="btn btn-icon" title="Copy tracking URL" onclick="copyText('${escAttr(trackUrl)}')"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="5.5" width="8.5" height="8.5" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 10.5H3.5C2.7 10.5 2 9.8 2 9V3.5C2 2.7 2.7 2 3.5 2H9C9.8 2 10.5 2.7 10.5 3.5V5.5" stroke="currentColor" stroke-width="1.5"/></svg></button>
+          </div>
+          <div class="ld-url-row">
+            <span class="ld-url-label">Direct</span>
+            <span class="ld-url-box" title="${escHtml(directUrl)}">${escHtml(directUrl)}</span>
+            <button class="btn btn-icon" title="Copy direct URL" onclick="copyText('${escAttr(directUrl)}')"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="5.5" width="8.5" height="8.5" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 10.5H3.5C2.7 10.5 2 9.8 2 9V3.5C2 2.7 2.7 2 3.5 2H9C9.8 2 10.5 2.7 10.5 3.5V5.5" stroke="currentColor" stroke-width="1.5"/></svg></button>
+          </div>
+          <div class="ld-meta">
+            <div><div class="ld-meta-label">Created</div><div class="ld-meta-val">${fmtDate(selectedLink.created_at)}</div></div>
+            <div><div class="ld-meta-label">All-Time Clicks</div><div class="ld-meta-val">${fmtNum(allTimeClicks)}</div></div>
+            <div><div class="ld-meta-label">All-Time Signups</div><div class="ld-meta-val">${fmtNum(totalSignups)}</div></div>
+            <div><div class="ld-meta-label">Conversion</div><div class="ld-meta-val">${convRate}%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>` : `
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">
+          <span class="st-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 8C9 8 10.2 6.8 10.2 5.3S9 2.5 7.5 2.5 4.8 3.7 4.8 5.3 6 8 7.5 8Z" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 12.5C2.5 10.3 4.7 9 7.5 9S12.5 10.3 12.5 12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+          Signup Summary
+        </span>
+        <span class="section-sub">${recentReferrals.length} link${recentReferrals.length !== 1 ? 's' : ''}</span>
       </div>
       <div class="tbl-wrap">
         <table>
@@ -1079,9 +1496,13 @@ async function renderAnalytics() {
           <tbody>${signupRows}</tbody>
         </table>
       </div>
-    </div>`;
+    </div>`}`;
 
-  requestAnimationFrame(() => initAnalyticsChart(chartData, tooltipData));
+  requestAnimationFrame(() => {
+    initAnalyticsChart(chartData, tooltipData);
+    renderHeatmap('hourHeatmap', rawClicks);
+    if (!selectedLink) renderChannelBars('channelBars', linkStats);
+  });
 }
 
 function initAnalyticsChart(chartData, tooltipData) {
@@ -1097,7 +1518,10 @@ function initAnalyticsChart(chartData, tooltipData) {
     data: {
       labels,
       datasets: [
-        { label: 'Clicks', data: clicks, borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.07)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#ff6b35', tension: 0.3, fill: true }
+        { label: 'Clicks', data: clicks, borderColor: '#ff6b35',
+          backgroundColor: c => accentGradient(c.chart.ctx, c.chart.chartArea, 0.22, 0),
+          borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: '#ff6b35',
+          pointBorderColor: '#111', pointBorderWidth: 1.5, tension: 0.3, fill: true }
       ]
     },
     options: {
@@ -1491,6 +1915,117 @@ function buildHourlyData(rawClicks) {
   return { chartData: data, tooltipMap: map };
 }
 
+// ── Hour-of-day distribution ──────────────────────────────────
+// Buckets every click into one of 24 local hour-of-day slots so we can
+// see the daily rhythm of activity across the whole selected period.
+function buildHourOfDay(rawClicks) {
+  const buckets = new Array(24).fill(0);
+  rawClicks.forEach(c => {
+    const h = new Date(c.clicked_at).getHours();
+    buckets[h]++;
+  });
+  const max = buckets.reduce((m, v) => Math.max(m, v), 0);
+  const total = buckets.reduce((s, v) => s + v, 0);
+  // Peak hour (earliest hour holding the max, only if there's data)
+  let peakHour = -1;
+  if (max > 0) peakHour = buckets.indexOf(max);
+  return { buckets, max, total, peakHour };
+}
+
+// Map a 0..1 intensity to one of 5 heat levels in the accent ramp.
+function heatColor(intensity) {
+  if (intensity <= 0) return '#1b1b1b';
+  const ramp = ['#3a241a', '#7a3a1f', '#c2511f', '#ff6b35', '#ff9265'];
+  const idx = Math.min(ramp.length - 1, Math.floor(intensity * ramp.length - 1e-9));
+  return ramp[idx];
+}
+
+function fmtHourLabel(h) {
+  const ampm = h < 12 ? 'AM' : 'PM';
+  let hr = h % 12; if (hr === 0) hr = 12;
+  return `${hr} ${ampm}`;
+}
+
+// Render the hour-of-day heatmap into the given container.
+function renderHeatmap(containerId, rawClicks) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const { buckets, max, total, peakHour } = buildHourOfDay(rawClicks);
+
+  if (total === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:34px 0;color:var(--text-muted);font-size:13px">No click activity in this period yet.</div>`;
+    return;
+  }
+
+  const cells = buckets.map((count, h) => {
+    const intensity = max > 0 ? count / max : 0;
+    const isPeak = h === peakHour;
+    const tip = `${fmtHourLabel(h)} — ${count} click${count !== 1 ? 's' : ''}`;
+    return `<div class="heat-cell" title="${escHtml(tip)}" style="background:${heatColor(intensity)}${isPeak ? ';box-shadow:0 0 0 1px var(--accent)' : ''}"></div>`;
+  }).join('');
+
+  // Axis labels every 3 hours to avoid clutter
+  const axis = buckets.map((_, h) =>
+    `<span>${h % 3 === 0 ? (h === 0 ? '12a' : h === 12 ? '12p' : (h < 12 ? h + 'a' : (h - 12) + 'p')) : ''}</span>`
+  ).join('');
+
+  const legendScale = [0.1, 0.35, 0.6, 0.85, 1].map(v =>
+    `<i style="background:${heatColor(v)}"></i>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="heatmap">
+      <div class="heatmap-cells">${cells}</div>
+      <div class="heatmap-axis">${axis}</div>
+    </div>
+    <div class="heatmap-legend">
+      <span>Less</span>
+      <span class="legend-scale">${legendScale}</span>
+      <span>More</span>
+    </div>`;
+}
+
+// ── Channel comparison ────────────────────────────────────────
+// Builds horizontal-bar HTML comparing managed links by click volume,
+// with conversion rate alongside. Pure presentation of get_link_stats data.
+function renderChannelBars(containerId, linkStats) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const rows = [...linkStats]
+    .map(l => ({
+      id: l.id,
+      name: l.name,
+      code: l.ref_code,
+      clicks: Number(l.clicks || 0),
+      refs: Number(l.ref_count || 0)
+    }))
+    .sort((a, b) => b.clicks - a.clicks);
+
+  const maxClicks = rows.reduce((m, r) => Math.max(m, r.clicks), 0);
+
+  if (rows.length === 0 || maxClicks === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:34px 0;color:var(--text-muted);font-size:13px">No clicks recorded across your links yet.</div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="chan-list">${rows.map(r => {
+    const pct  = maxClicks > 0 ? Math.max(2, (r.clicks / maxClicks) * 100) : 0;
+    const conv = r.clicks > 0 ? ((r.refs / r.clicks) * 100).toFixed(1) + '%' : '—';
+    const thin = pct < 18; // label won't fit inside the bar
+    const labelInside = thin ? '' : `<span>${fmtNum(r.clicks)}</span>`;
+    const labelOutside = thin ? `<span>${fmtNum(r.clicks)}</span>` : '';
+    return `
+      <div class="chan-row" onclick="navigate('analytics','${r.id}')" style="cursor:pointer">
+        <div class="chan-name">${escHtml(r.name)}<small>${escHtml(r.code)}</small></div>
+        <div class="chan-bar-track">
+          <div class="chan-bar-fill ${thin ? 'is-thin' : ''}" style="width:${pct}%;--w:${pct}%">${labelInside}${labelOutside}</div>
+        </div>
+        <div class="chan-conv"><b>${conv}</b> conv</div>
+      </div>`;
+  }).join('')}</div>`;
+}
+
 function escHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -1537,11 +2072,23 @@ function showToast(msg) {
   setTimeout(() => { el.style.transition = 'opacity .25s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 260); }, 2600);
 }
 
+// Build a vertical accent gradient for area fills under line charts.
+function accentGradient(ctx, area, topAlpha, bottomAlpha) {
+  if (!area) return 'rgba(255,107,53,0.12)';
+  const g = ctx.createLinearGradient(0, area.top, 0, area.bottom);
+  g.addColorStop(0, `rgba(255,107,53,${topAlpha})`);
+  g.addColorStop(1, `rgba(255,107,53,${bottomAlpha})`);
+  return g;
+}
+
 // Chart.js shared defaults
 function tooltipDefaults() {
   return {
-    backgroundColor: '#1e1e1e', borderColor: '#2a2a2a', borderWidth: 1,
-    titleColor: '#f2efea', bodyColor: '#d9d6d0', padding: 10
+    backgroundColor: '#1c1c1c', borderColor: '#333', borderWidth: 1,
+    titleColor: '#f2efea', bodyColor: '#d9d6d0', padding: 11,
+    cornerRadius: 6, titleFont: { family: "'Work Sans', sans-serif", weight: '600', size: 12 },
+    bodyFont: { family: "'Work Sans', sans-serif", size: 12 }, displayColors: false,
+    caretSize: 5
   };
 }
 
